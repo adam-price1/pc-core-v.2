@@ -1,0 +1,6 @@
+.env
+backend/.env
+storage/
+node_modules/
+dist/
+__pycache__/

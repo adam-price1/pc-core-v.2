@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolicyCheck - URL Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 6px;
+            display: none;
+        }
+        .result.success {
+            background: #e8f5e9;
+            border: 2px solid #4CAF50;
+            display: block;
+        }
+        .result.error {
+            background: #ffebee;
+            border: 2px solid #f44336;
+            display: block;
+        }
+        .result h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .result pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .stat {
+            padding: 10px;
+            margin: 5px 0;
+            background: #fafafa;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+        }
+        .stat strong {
+            display: inline-block;
+            width: 150px;
+        }
+        .pdf-list {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .pdf-link {
+            display: block;
+            padding: 5px;
+            color: #1976D2;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        .pdf-link:hover {
+            text-decoration: underline;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        .instructions p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 PolicyCheck URL Tester</h1>
+        
+        <div class="instructions">
+            <p><strong>Instructions:</strong></p>
+            <p>1. Make sure you're logged into PolicyCheck (http://localhost)</p>
+            <p>2. Enter a URL you want to test</p>
+            <p>3. Click "Test URL" to see if it can be crawled</p>
+        </div>
+
+        <div class="input-group">
+            <label for="urlInput">URL to Test:</label>
+            <input 
+                type="text" 
+                id="urlInput" 
+                placeholder="https://www.aainsurance.co.nz/products"
+                value="https://www.aainsurance.co.nz/products"
+            >
+        </div>
+
+        <button onclick="testUrl()" id="testBtn">Test URL</button>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function testUrl() {
+            const urlInput = document.getElementById('urlInput');
+            const resultDiv = document.getElementById('result');
+            const testBtn = document.getElementById('testBtn');
+            
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            // Disable button
+            testBtn.disabled = true;
+            testBtn.textContent = 'Testing...';
+            
+            // Clear previous result
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '';
+
+            try {
+                // Get token from localStorage (set by main app)
+                const token = localStorage.getItem('token');
+                
+                if (!token) {
+                    throw new Error('Not logged in. Please login at http://localhost first.');
+                }
+
+                // Make API request
+                const response = await fetch(
+                    `http://localhost:8000/api/crawl/test-url?url=${encodeURIComponent(url)}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p><strong>Message:</strong> ${error.message}</p>
+                    <p>Make sure you're logged into PolicyCheck at <a href="http://localhost">http://localhost</a></p>
+                `;
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = 'Test URL';
+            }
+        }
+
+        function displayResults(data) {
+            const resultDiv = document.getElementById('result');
+            
+            const isSuccess = data.can_access && !data.error;
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+            
+            let html = `<h3>${isSuccess ? '✅ Success' : '⚠️ Issue Detected'}</h3>`;
+            
+            html += '<div class="stat"><strong>URL:</strong> ' + data.url + '</div>';
+            html += '<div class="stat"><strong>Can Access:</strong> ' + (data.can_access ? '✅ Yes' : '❌ No') + '</div>';
+            html += '<div class="stat"><strong>HTTP Status:</strong> ' + (data.status_code || 'N/A') + '</div>';
+            html += '<div class="stat"><strong>Content-Type:</strong> ' + (data.content_type || 'N/A') + '</div>';
+            html += '<div class="stat"><strong>Robots.txt:</strong> ' + (data.robots_allowed ? '✅ Allowed' : '❌ Blocked') + '</div>';
+            html += '<div class="stat"><strong>Links Found:</strong> ' + data.links_found + '</div>';
+            
+            if (data.error) {
+                html += '<div class="stat" style="border-left-color: #f44336;"><strong>Error:</strong> ' + data.error + '</div>';
+            }
+            
+            if (data.pdf_links && data.pdf_links.length > 0) {
+                html += '<div class="pdf-list">';
+                html += '<strong>📄 PDF Links Found (' + data.pdf_links.length + '):</strong>';
+                data.pdf_links.forEach(pdf => {
+                    html += '<a href="' + pdf + '" class="pdf-link" target="_blank">' + pdf + '</a>';
+                });
+                html += '</div>';
+            } else {
+                html += '<div class="stat"><strong>PDF Links:</strong> None found on this page</div>';
+            }
+            
+            // Recommendations
+            html += '<h3>📋 Recommendations:</h3>';
+            
+            if (!data.robots_allowed) {
+                html += '<p>❌ This URL is blocked by robots.txt. Try different URLs from this domain.</p>';
+            } else if (data.status_code !== 200) {
+                html += '<p>⚠️ HTTP error. This page cannot be accessed.</p>';
+            } else if (data.links_found === 0) {
+                html += '<p>⚠️ No links found. This might be a JavaScript-heavy site or requires login.</p>';
+            } else if (data.pdf_links.length === 0) {
+                html += '<p>ℹ️ No PDFs on this specific page, but ' + data.links_found + ' links found. The crawler will follow these links to find PDFs.</p>';
+            } else {
+                html += '<p>✅ This URL looks good for crawling! Found ' + data.pdf_links.length + ' PDF(s).</p>';
+            }
+            
+            // Raw JSON
+            html += '<h3>Raw Response:</h3>';
+            html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            
+            resultDiv.innerHTML = html;
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testUrl();
+            }
+        });
+    </script>
+</body>
+</html>

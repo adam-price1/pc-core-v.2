@@ -1,0 +1,32 @@
+# FastAPI and server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Database
+sqlalchemy==2.0.25
+pymysql==1.1.0
+cryptography==42.0.0
+alembic==1.13.1
+
+# Data validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+itsdangerous==2.2.0
+
+# HTTP and web scraping
+requests==2.31.0
+urllib3==2.1.0
+beautifulsoup4==4.12.3
+
+# File handling
+python-multipart==0.0.6
+PyPDF2==3.0.1
+
+# Caching and observability
+redis==5.0.1
+prometheus-client==0.19.0
