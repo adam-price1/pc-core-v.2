@@ -237,7 +237,7 @@ def validate_configuration() -> None:
             warnings.append(f"SECRET_KEY is short ({len(SECRET_KEY)} chars) - acceptable in development")
     
     # Validate database URL format
-    if not DATABASE_URL.startswith(("mysql+pymysql://", "postgresql://")):
+    if not DATABASE_URL.startswith(("mysql+pymysql://", "postgresql://", "sqlite:")):
         errors.append(f"Invalid DATABASE_URL format: {DATABASE_URL[:20]}...")
     
     # Validate storage directories

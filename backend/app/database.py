@@ -34,29 +34,23 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 # Create engine with production-optimized settings
-engine = create_engine(
-    DATABASE_URL,
-    # Connection validation
-    pool_pre_ping=True,  # Test connection before use
-    pool_recycle=DB_POOL_RECYCLE,  # Prevent stale connections
-
-    # Pool sizing
+# Build engine kwargs dynamically based on database type
+_engine_kwargs = dict(
+    pool_pre_ping=True,
+    pool_recycle=DB_POOL_RECYCLE,
     pool_size=DB_POOL_SIZE,
     max_overflow=DB_MAX_OVERFLOW,
     pool_timeout=DB_POOL_TIMEOUT,
-
-    # Debugging
     echo=False,
     echo_pool=False,
-
-    # Pool class
     poolclass=QueuePool,
-
-    # Connection options — short connect timeout so retries cycle quickly
-    connect_args={
-        "connect_timeout": 5,
-    },
 )
+
+# Only add connect_args for databases that support it (not SQLite)
+if not DATABASE_URL.startswith("sqlite:"):
+    _engine_kwargs["connect_args"] = {"connect_timeout": 5}
+
+engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 # ============================================================================
 # SESSION FACTORY
